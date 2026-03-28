@@ -81,8 +81,9 @@ async def on_message(message: discord.Message):
 
 async def tap(message: discord.Message):
     if message.author.id not in tappers:
-        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0,
-                                      'booms': 0}
+        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'highest_booms': 0,
+                                      'current': 0,
+                                      'current_booms': 0}
     tapper = tappers[message.author.id]
 
     if tapper['current'] == 30:
@@ -104,12 +105,13 @@ async def tap(message: discord.Message):
         tapper['current'] += 1
         if tapper['current'] > tapper['highest']:
             tapper['highest'] = tapper['current']
+            tapper['highest_booms'] = tapper['current_booms']
         tap_message_content += f'### Success - ★ {tapper["current"]}'
     elif roll >= sf_rate['failure']:
         tap_message_content += f'### Failure - ★ {tapper["current"]}'
     else:
         tapper['current'] = sf_rate['trace']
-        tapper['booms'] += 1
+        tapper['current_booms'] += 1
         tap_message_content += f'### Destroyed - ★ {tapper["current"]}'
 
     # Save tappers
@@ -121,26 +123,25 @@ async def tap(message: discord.Message):
 
 async def stats(message):
     if message.author.id not in tappers:
-        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0,
-                                      'booms': 0}
+        await message.reply('No stats yet, start tapping!')
     tapper = tappers[message.author.id]
 
     stats_message_content = (f'### {message.author.mention}\'s stats\n'
                              f'- tapped {tapper["taps"]:,} times\n'
                              f'- {tapper["spent"]:,} mesos spent\n'
-                             f'- currently at ★ {tapper["current"]}\n'
-                             f'- highest stars is ★ {tapper["highest"]}\n'
-                             f'- boomed {tapper["booms"]:,} times')
+                             f'- currently at ★ {tapper["current"]}, {tapper["current_booms"]:,} booms\n'
+                             f'- record is ★ {tapper["highest"]}, {tapper["highest_booms"]:,} booms\n')
     await message.reply(stats_message_content)
 
 
 async def leaderboard(message):
-    sorted_tappers = sorted(tappers.values(), key=lambda tapper: (-tapper['current'], tapper['booms'], tapper['spent']))
+    sorted_tappers = sorted(tappers.values(),
+                            key=lambda tapper: (-tapper['highest'], tapper['highest_booms'], tapper['spent']))
     leaderboard_message_content = f'### Leaderboard\n'
     message = await message.reply(leaderboard_message_content)
     for i in range(min(5, len(sorted_tappers))):
         tapper = sorted_tappers[i]
-        leaderboard_message_content += f'{i}. ★ {tapper["current"]}, {tapper["booms"]} booms - <@{tapper["id"]}>\n'
+        leaderboard_message_content += f'{i}. ★ {tapper["highest"]}, {tapper["highest_booms"]} booms - <@{tapper["id"]}>\n'
     await message.edit(content=leaderboard_message_content)
 
 
