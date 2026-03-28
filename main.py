@@ -74,7 +74,8 @@ async def on_message(message: discord.Message):
 
 async def tap(message: discord.Message):
     if message.author.id not in tappers:
-        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0, 'booms': 0}
+        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0,
+                                      'booms': 0}
     tapper = tappers[message.author.id]
 
     if tapper['current'] == 30:
@@ -108,7 +109,8 @@ async def tap(message: discord.Message):
 
 async def stats(message):
     if message.author.id not in tappers:
-        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0, 'booms': 0}
+        tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'current': 0,
+                                      'booms': 0}
     tapper = tappers[message.author.id]
 
     stats_message_content = (f'### {message.author.mention}\'s stats\n'
@@ -121,6 +123,7 @@ async def stats(message):
 
 
 async def leaderboard(message):
+    print(tappers)
     sorted_tappers = sorted(tappers.values(), key=lambda tapper: (-tapper['current'], tapper['booms'], tapper['spent']))
     leaderboard_message_content = f'### Leaderboard\n'
     message = await message.reply(leaderboard_message_content)
