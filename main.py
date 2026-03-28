@@ -1,3 +1,4 @@
+import ast
 import random
 
 import discord
@@ -47,7 +48,13 @@ class StarforceSimulator(commands.Bot):
 starforce_simulator_intents = discord.Intents.default()
 starforce_simulator_intents.message_content = True
 starforce_simulator = StarforceSimulator(command_prefix='#', intents=starforce_simulator_intents)
-tappers = {}
+
+try:
+    with open("tappers.txt") as f:
+        tappers = ast.literal_eval(f.read())
+except (ValueError, FileNotFoundError, SyntaxError):
+    tappers = {}
+print(tappers)
 
 
 @starforce_simulator.event
@@ -104,6 +111,11 @@ async def tap(message: discord.Message):
         tapper['current'] = sf_rate['trace']
         tapper['booms'] += 1
         tap_message_content += f'### Destroyed - ★ {tapper["current"]}'
+
+    # Save tappers
+    with open("tappers.txt", "w") as f:
+        f.write(tappers.__str__())
+
     await message.reply(tap_message_content)
 
 
@@ -123,7 +135,6 @@ async def stats(message):
 
 
 async def leaderboard(message):
-    print(tappers)
     sorted_tappers = sorted(tappers.values(), key=lambda tapper: (-tapper['current'], tapper['booms'], tapper['spent']))
     leaderboard_message_content = f'### Leaderboard\n'
     message = await message.reply(leaderboard_message_content)
