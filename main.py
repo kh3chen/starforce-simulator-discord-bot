@@ -1,7 +1,6 @@
 import ast
 import asyncio
 import random
-from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -76,7 +75,7 @@ async def on_message(message: discord.Message):
         return
 
     if message.author.id not in async_locks:
-        async_locks[message.author.id] = asyncio.Lock()
+        async_locks[message.author.id] = {'lock': asyncio.Lock(), 'command': ''}
 
     if message.author.id not in tappers:
         tappers[message.author.id] = {'id': message.author.id, 'taps': 0,
@@ -97,7 +96,10 @@ async def on_message(message: discord.Message):
 
 
 async def tap(message: discord.Message, tapper):
-    async with async_locks[message.author.id]:
+    if async_locks[message.author.id]['lock'].locked() and async_locks[message.author.id]['command'] == 'skip':
+        return await skipping(message, tappers[message.author.id])
+    async with async_locks[message.author.id]['lock']:
+        async_locks[message.author.id]['command'] = 'tap'
         prestige = tapper['prestiges'][-1]
 
         if prestige['current'] == 30:
@@ -141,7 +143,10 @@ async def tap(message: discord.Message, tapper):
 
 
 async def skip(message, tapper):
-    async with async_locks[message.author.id]:
+    if async_locks[message.author.id]['lock'].locked() and async_locks[message.author.id]['command'] == 'skip':
+        return await skipping(message, tappers[message.author.id])
+    async with async_locks[message.author.id]['lock']:
+        async_locks[message.author.id]['command'] = 'skip'
         prestige = tapper['prestiges'][-1]
 
         if prestige['current'] == 30:
@@ -153,7 +158,6 @@ async def skip(message, tapper):
             return
 
         await message.reply(f'Tapping until ★ {prestige["highest"]}...')
-        last_message_time = datetime.now().timestamp()
         before = prestige.copy()
         while prestige['current'] < prestige['highest']:
             tapper['taps'] += 1
@@ -170,13 +174,6 @@ async def skip(message, tapper):
                 prestige['current'] = sf_rate['trace']
                 prestige['current_booms'] += 1
 
-            # Send message every 10 seconds
-            now = datetime.now().timestamp()
-            if now - last_message_time > 10:
-                await message.reply(
-                    f'Still tapping until ★ {prestige["highest"]}...')
-                last_message_time = now
-
             # Sleep so this task doesn't block
             await asyncio.sleep(0)
 
@@ -191,7 +188,10 @@ async def skip(message, tapper):
 
 
 async def prestige(message, tapper):
-    async with async_locks[message.author.id]:
+    if async_locks[message.author.id]['lock'].locked() and async_locks[message.author.id]['command'] == 'skip':
+        return await skipping(message, tappers[message.author.id])
+    async with async_locks[message.author.id]['lock']:
+        async_locks[message.author.id]['command'] = 'prestige'
         prestige = tapper['prestiges'][-1]
         if prestige['current'] < 30:
             await message.reply('Reach ★ 30 to Prestige ⬖.')
@@ -205,7 +205,10 @@ async def prestige(message, tapper):
 
 
 async def stats(message, tapper):
-    async with async_locks[message.author.id]:
+    if async_locks[message.author.id]['lock'].locked() and async_locks[message.author.id]['command'] == 'skip':
+        return await skipping(message, tappers[message.author.id])
+    async with async_locks[message.author.id]['lock']:
+        async_locks[message.author.id]['command'] = 'stats'
         stats_message_content = f'## {message.author.mention} stats\n'
         current_prestige = tapper['prestiges'][-1]
         if len(tapper['prestiges']) > 1:
@@ -227,6 +230,12 @@ async def stats(message, tapper):
                                       f'- Total mesos: {sum(prestige["spent"] for prestige in tapper["prestiges"]):,}\n')
 
         await message.reply(stats_message_content)
+
+
+async def skipping(message, tapper):
+    prestige = tapper['prestiges'][-1]
+    await message.reply(
+        f'Still tapping until ★ {prestige["highest"]}...')
 
 
 async def leaderboard(message):
