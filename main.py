@@ -71,15 +71,14 @@ async def on_message(message: discord.Message):
     if message.channel.id != config.TAP_CHANNEL_ID:
         return
 
-    match message.content.lower().strip():
-        case 'tap':
-            await tap(message)
-        case 'skip':
-            await skip(message)
-        case 'stats':
-            await stats(message)
-        case 'leaderboard':
-            await leaderboard(message)
+    if 'tap' == message.content.lower().strip():
+        await tap(message)
+    if 'skip' == message.content.lower().strip():
+        await skip(message)
+    if 'stats' == message.content.lower().strip():
+        await stats(message)
+    if 'leaderboard' == message.content.lower().strip():
+        await leaderboard(message)
 
 
 async def tap(message: discord.Message):
