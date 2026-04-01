@@ -129,7 +129,7 @@ async def skip22(message):
         return
 
     tapper = tappers[message.author.id]
-    if tapper['taps'] < 1000:
+    if tapper['taps'] < 500:
         await message.reply('You have yet to unlock this power.')
         return
 
