@@ -199,7 +199,7 @@ async def stats(message):
     stats_message_content = f'## {message.author.mention} stats\n'
     current_prestige = tapper['prestiges'][-1]
     if len(tapper['prestiges']) > 1:
-        stats_message_content += f'### Current Prestige ⬖ {len(tappers["prestiges"]) - 1:,}\n'
+        stats_message_content += f'### Current Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n'
     stats_message_content += (f'- Tapped {current_prestige["taps"]:,} times\n'
                               f'- Current: ★ {current_prestige["current"]} | {current_prestige["current_booms"]:,} booms\n'
                               f'- Record: ★ {current_prestige["highest"]} | {current_prestige["highest_booms"]:,} booms\n')
