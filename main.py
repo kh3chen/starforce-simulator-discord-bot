@@ -52,9 +52,9 @@ starforce_simulator = StarforceSimulator(command_prefix='#', intents=starforce_s
 try:
     with open("tappers.txt") as f:
         tappers = ast.literal_eval(f.read())
-        for tapper in tappers.values():
-            if 'prestige' not in tapper:
-                tapper['prestige'] = 0
+        for t in tappers.values():
+            if 'prestige' not in t:
+                t['prestige'] = 0
 except (ValueError, FileNotFoundError, SyntaxError):
     tappers = {}
 
@@ -172,6 +172,7 @@ async def prestige(message):
         await message.reply('Reach ★ 30 to prestige.')
         return
 
+    tapper = tappers[message.author.id]
     if tapper['current'] < 30:
         await message.reply('Reach ★ 30 to prestige.')
         return
