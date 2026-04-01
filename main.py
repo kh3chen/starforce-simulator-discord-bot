@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import random
 
 import discord
@@ -56,6 +57,8 @@ except (ValueError, FileNotFoundError, SyntaxError) as e:
     print(e)
     tappers = {}
 
+async_locks = {}
+
 
 @starforce_simulator.event
 async def on_ready():
@@ -71,115 +74,119 @@ async def on_message(message: discord.Message):
     if message.channel.id != config.TAP_CHANNEL_ID:
         return
 
-    if 'tap' == message.content.lower().strip():
-        await tap(message)
-    if 'skip' == message.content.lower().strip():
-        await skip(message)
-    if 'prestige' == message.content.lower().strip():
-        await prestige(message)
-    if 'stats' == message.content.lower().strip():
-        await stats(message)
-    if 'leaderboard' == message.content.lower().strip():
-        await leaderboard(message)
+    if message.author.id not in async_locks:
+        async_locks[message.author.id] = asyncio.Lock()
 
-
-async def tap(message: discord.Message):
     if message.author.id not in tappers:
         tappers[message.author.id] = {'id': message.author.id, 'taps': 0,
                                       'prestiges': [{'spent': 0, 'highest': 0, 'highest_booms': 0,
                                                      'current': 0, 'current_booms': 0, 'taps': 0}]}
-    tapper = tappers[message.author.id]
-    prestige = tapper['prestiges'][-1]
 
-    if prestige['current'] == 30:
-        await message.reply('You already hit ★ 30! Perhaps Prestige ⬖?')
-        return
-
-    tapper['taps'] += 1
-    prestige['taps'] += 1
-    random.seed(message.author.id * (tapper['taps']))
-    roll = random.randrange(10000)
-    sf_rate = sf_rates[prestige['current']]
-    prestige['spent'] += sf_rate['cost']
-    tap_message_content = (f'### Tap #{prestige["taps"]:,} - ★ {prestige["current"]}\n'
-                           f'- Cost: {sf_rate["cost"]:,} mesos\n'
-                           f'- Success: {sf_rate["success"]:,} or higher ({sf_rate["p_success"]})\n')
-    if len(tapper['prestiges']) > 1:
-        tap_message_content = f'### Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
-    if sf_rate['failure'] > 0:
-        tap_message_content += f'- Destruction: {sf_rate["failure"] - 1:,} or lower ({sf_rate["p_trace"]})\n'
-    tap_message_content += f'Your roll [0-9,999]: {roll:,}\n'
-    if roll >= sf_rate['success']:
-        prestige['current'] += 1
-        if prestige['current'] > prestige['highest']:
-            prestige['highest'] = prestige['current']
-            prestige['highest_booms'] = prestige['current_booms']
-        elif prestige['current'] == prestige['highest'] and prestige['current_booms'] < prestige['highest_booms']:
-            prestige['highest_booms'] = prestige['current_booms']
-        tap_message_content += f'### :star: Success - ★ {prestige["current"]}'
-    elif roll >= sf_rate['failure']:
-        tap_message_content += f'### Failure - ★ {prestige["current"]}'
-    else:
-        prestige['current'] = sf_rate['trace']
-        prestige['current_booms'] += 1
-        tap_message_content += f'### :boom: Destroyed - ★ {prestige["current"]}'
-
-    # Save tappers
-    with open("tappers.txt", "w") as f:
-        f.write(tappers.__str__())
-
-    await message.reply(tap_message_content)
+    command = message.content.lower().strip()
+    if 'tap' == command:
+        await tap(message, tappers[message.author.id])
+    elif 'skip' == command:
+        await skip(message, tappers[message.author.id])
+    elif 'prestige' == command:
+        await prestige(message, tappers[message.author.id])
+    elif 'stats' == command:
+        await stats(message, tappers[message.author.id])
+    elif 'leaderboard' == command:
+        await leaderboard(message)
 
 
-async def skip(message):
-    if message.author.id not in tappers:
-        await message.reply('You have yet to unlock this power.')
-        return
+async def tap(message: discord.Message, tapper):
+    async with async_locks[message.author.id]:
+        prestige = tapper['prestiges'][-1]
 
-    tapper = tappers[message.author.id]
-    prestige = tapper['prestiges'][-1]
+        if prestige['current'] == 30:
+            await message.reply('You already hit ★ 30! Perhaps Prestige ⬖?')
+            return
 
-    if prestige['current'] == 30:
-        await message.reply('You already hit ★ 30! Perhaps Prestige ⬖?')
-        return
-
-    if prestige['current'] >= prestige['highest']:
-        await message.reply('You cannot skip beyond what you have yet to achieve. You must tap from here.')
-        return
-
-    await message.reply(f'Tapping until ★ {prestige["highest"]}...')
-    before = prestige.copy()
-    while prestige['current'] < prestige['highest']:
         tapper['taps'] += 1
         prestige['taps'] += 1
         random.seed(message.author.id * (tapper['taps']))
         roll = random.randrange(10000)
         sf_rate = sf_rates[prestige['current']]
         prestige['spent'] += sf_rate['cost']
+        tap_message_content = (f'### Tap #{prestige["taps"]:,} - ★ {prestige["current"]}\n'
+                               f'- Cost: {sf_rate["cost"]:,} mesos\n'
+                               f'- Success: {sf_rate["success"]:,} or higher ({sf_rate["p_success"]})\n')
+        if len(tapper['prestiges']) > 1:
+            tap_message_content = f'### Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
+        if sf_rate['failure'] > 0:
+            tap_message_content += f'- Destruction: {sf_rate["failure"] - 1:,} or lower ({sf_rate["p_trace"]})\n'
+        tap_message_content += f'Your roll [0-9,999]: {roll:,}\n'
         if roll >= sf_rate['success']:
             prestige['current'] += 1
+            if prestige['current'] > prestige['highest']:
+                prestige['highest'] = prestige['current']
+                prestige['highest_booms'] = prestige['current_booms']
+            elif prestige['current'] == prestige['highest'] and prestige['current_booms'] < prestige['highest_booms']:
+                prestige['highest_booms'] = prestige['current_booms']
+            tap_message_content += f'### :star: Success - ★ {prestige["current"]}'
         elif roll >= sf_rate['failure']:
-            pass
+            tap_message_content += f'### Failure - ★ {prestige["current"]}'
         else:
             prestige['current'] = sf_rate['trace']
             prestige['current_booms'] += 1
+            tap_message_content += f'### :boom: Destroyed - ★ {prestige["current"]}'
 
-    tap_message_content = (
-        f'### Taps #{before["taps"] + 1:,} to {prestige["taps"]:,} ({prestige["taps"] - before["taps"]:,} taps)\n'
-        f'- Cost: {prestige["spent"] - before["spent"]:,} mesos\n'
-        f'- Booms: {prestige["current_booms"] - before["current_booms"]:,}\n'
-        f'### :fast_forward: Skip to ★ {prestige["current"]}')
-    if len(tapper['prestiges']) > 1:
-        tap_message_content = f'### Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
-    await message.reply(tap_message_content)
+        # Save tappers
+        with open("tappers.txt", "w") as f:
+            f.write(tappers.__str__())
+
+        await message.reply(tap_message_content)
 
 
-async def prestige(message):
-    if message.author.id not in tappers:
-        await message.reply('Reach ★ 30 to Prestige ⬖.')
-        return
+async def skip(message, tapper):
+    async with async_locks[message.author.id]:
+        prestige = tapper['prestiges'][-1]
 
-    tapper = tappers[message.author.id]
+        if prestige['current'] == 30:
+            await message.reply('You already hit ★ 30! Perhaps Prestige ⬖?')
+            return
+
+        if prestige['current'] >= prestige['highest']:
+            await message.reply('You cannot skip beyond what you have yet to achieve. You must tap from here.')
+            return
+
+        await message.reply(f'Tapping until ★ {prestige["highest"]}...')
+        before = prestige.copy()
+        while prestige['current'] < prestige['highest']:
+            tapper['taps'] += 1
+            prestige['taps'] += 1
+            random.seed(message.author.id * (tapper['taps']))
+            roll = random.randrange(10000)
+            sf_rate = sf_rates[prestige['current']]
+            prestige['spent'] += sf_rate['cost']
+            if roll >= sf_rate['success']:
+                prestige['current'] += 1
+            elif roll >= sf_rate['failure']:
+                pass
+            else:
+                prestige['current'] = sf_rate['trace']
+                prestige['current_booms'] += 1
+
+            # Send message every 500,000 taps
+            if prestige['taps'] - before['taps'] % 500000 == 0:
+                await message.reply(
+                    f'Still tapping until ★ {prestige["highest"]}... ({prestige["taps"] - before["taps"]:,} taps)')
+
+            # Sleep so this task doesn't block
+            await asyncio.sleep(0)
+
+        tap_message_content = (
+            f'### Taps #{before["taps"] + 1:,} to {prestige["taps"]:,} ({prestige["taps"] - before["taps"]:,} taps)\n'
+            f'- Cost: {prestige["spent"] - before["spent"]:,} mesos\n'
+            f'- Booms: {prestige["current_booms"] - before["current_booms"]:,}\n'
+            f'### :fast_forward: Skip to ★ {prestige["current"]}')
+        if len(tapper['prestiges']) > 1:
+            tap_message_content = f'### Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
+        await message.reply(tap_message_content)
+
+
+async def prestige(message, tapper):
     prestige = tapper['prestiges'][-1]
     if prestige['current'] < 30:
         await message.reply('Reach ★ 30 to Prestige ⬖.')
@@ -192,10 +199,7 @@ async def prestige(message):
         f'You have reached Prestige ⬖ {len(tapper["prestiges"]) - 1:,}! Your stars and booms have been reset.')
 
 
-async def stats(message):
-    if message.author.id not in tappers:
-        await message.reply('No stats yet, start tapping!')
-    tapper = tappers[message.author.id]
+async def stats(message, tapper):
     stats_message_content = f'## {message.author.mention} stats\n'
     current_prestige = tapper['prestiges'][-1]
     if len(tapper['prestiges']) > 1:
