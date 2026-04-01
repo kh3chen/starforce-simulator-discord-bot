@@ -53,13 +53,15 @@ try:
     with open("tappers.txt") as f:
         tappers = ast.literal_eval(f.read())
         for t in tappers.values():
-            if 'prestige' not in t:
-                t['prestige'] = 0
-            if 'past_booms' not in t:
-                t['past_booms'] = 0
+            if t['prestige'] > 0:
+                t['prestige'] = [t]
+            else:
+                t['prestige'] = []
 except (ValueError, FileNotFoundError, SyntaxError):
     tappers = {}
 
+with open("tappers_new.txt", "w") as f:
+    f.write(tappers.__str__())
 
 @starforce_simulator.event
 async def on_ready():
@@ -90,7 +92,7 @@ async def on_message(message: discord.Message):
 async def tap(message: discord.Message):
     if message.author.id not in tappers:
         tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'highest_booms': 0,
-                                      'current': 0, 'current_booms': 0, 'past_booms': 0, 'prestige': 0}
+                                      'current': 0, 'current_booms': 0}
     tapper = tappers[message.author.id]
 
     if tapper['current'] == 30:
