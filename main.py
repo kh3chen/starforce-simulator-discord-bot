@@ -155,7 +155,7 @@ async def skip(message):
     tap_message_content = (
         f'### Taps #{before["taps"] + 1:,} to {tapper["taps"]:,} ({tapper["taps"] - before["taps"]:,} taps)\n'
         f'- Cost: {tapper["spent"] - before["spent"]:,} mesos\n'
-        f'- Booms: {tapper["current_booms"] - before["current_booms"]:,}'
+        f'- Booms: {tapper["current_booms"] - before["current_booms"]:,}\n'
         f'### :fast_forward: Skip to ★ {tapper["current"]}')
     await message.reply(tap_message_content)
 
