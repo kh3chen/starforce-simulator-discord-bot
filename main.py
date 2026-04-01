@@ -239,19 +239,28 @@ async def skipping(message, tapper):
 
 
 async def leaderboard(message):
-    best_prestiges = []
-    for tapper in tappers.values():
-        best_prestige = \
-            sorted(tapper['prestiges'], key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))[
-                0].copy()
-        best_prestige['id'] = tapper['id']
-        best_prestiges.append(best_prestige)
-    sorted_prestiges = sorted(best_prestiges, key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))
     leaderboard_message_content = f'## Leaderboard\n'
-    message = await message.reply(leaderboard_message_content)
-    for i in range(min(10, len(sorted_prestiges))):
-        tapper = sorted_prestiges[i]
+    leaderboard_message_content += f'### Prestige\n'
+    sorted_by_prestige_level = sorted([tapper for tapper in tappers.values() if len(tapper['prestiges']) > 1],
+                                      key=lambda tapper: (-len(tapper['prestiges']), tapper['taps']))
+    for i in range(min(10, len(sorted_by_prestige_level))):
+        tapper = sorted_by_prestige_level[i]
+        leaderboard_message_content += f'{i}. Prestige ⬖ {len(tapper["prestiges"]) - 1:,} | {tapper["taps"]:,} - <@{tapper["id"]}>\n'
+
+    leaderboard_message_content += f'### Star Force\n'
+    best_prestige_of_tappers = []
+    for tapper in tappers.values():
+        best_prestige = sorted(tapper['prestiges'],
+                               key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))[0].copy()
+        best_prestige['id'] = tapper['id']
+        best_prestige_of_tappers.append(best_prestige)
+    sorted_best_prestige_of_tappers = sorted(best_prestige_of_tappers,
+                                             key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))
+    for i in range(min(10, len(sorted_best_prestige_of_tappers))):
+        tapper = sorted_best_prestige_of_tappers[i]
         leaderboard_message_content += f'{i}. ★ {tapper["highest"]} | {tapper["highest_booms"]:,} booms - <@{tapper["id"]}>\n'
+
+    message = await message.reply('## Leaderboard')
     await message.edit(content=leaderboard_message_content)
 
 
