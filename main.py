@@ -89,7 +89,7 @@ async def tap(message: discord.Message):
     tapper = tappers[message.author.id]
 
     if tapper['current'] == 30:
-        await message.reply('You already hit 30★!')
+        await message.reply('You already hit ★ 30!')
         return
 
     tapper['taps'] += 1
@@ -97,7 +97,7 @@ async def tap(message: discord.Message):
     roll = random.randrange(10000)
     sf_rate = sf_rates[tapper['current']]
     tapper['spent'] += sf_rate['cost']
-    tap_message_content = (f'### Tap #{tapper["taps"]} - ★ {tapper["current"]}\n'
+    tap_message_content = (f'### Tap #{tapper["taps"]:,} - ★ {tapper["current"]}\n'
                            f'- Cost: {sf_rate["cost"]:,} mesos\n'
                            f'- Success: {sf_rate["success"]:,} or higher ({sf_rate["p_success"]})\n')
     if sf_rate['failure'] > 0:
@@ -108,13 +108,13 @@ async def tap(message: discord.Message):
         if tapper['current'] > tapper['highest']:
             tapper['highest'] = tapper['current']
             tapper['highest_booms'] = tapper['current_booms']
-        tap_message_content += f'### Success - ★ {tapper["current"]}'
+        tap_message_content += f'### :star: Success - ★ {tapper["current"]}'
     elif roll >= sf_rate['failure']:
         tap_message_content += f'### Failure - ★ {tapper["current"]}'
     else:
         tapper['current'] = sf_rate['trace']
         tapper['current_booms'] += 1
-        tap_message_content += f'### Destroyed - ★ {tapper["current"]}'
+        tap_message_content += f'### :boom: Destroyed - ★ {tapper["current"]}'
 
     # Save tappers
     with open("tappers.txt", "w") as f:
@@ -152,9 +152,11 @@ async def skip(message):
             tapper['current'] = sf_rate['trace']
             tapper['current_booms'] += 1
 
-    tap_message_content = (f'### Taps #{before["taps"] + 1}-{tapper["taps"]} - ★ {tapper["current"]}\n'
-                           f'- Cost: {tapper["spent"] - before["spent"]:,} mesos\n'
-                           f'- Booms: {tapper["current_booms"] - before["current_booms"]}')
+    tap_message_content = (
+        f'### Taps #{before["taps"] + 1:,} to {tapper["taps"]:,} ({tapper["taps"] - before["taps"]:,} taps)\n'
+        f'- Cost: {tapper["spent"] - before["spent"]:,} mesos\n'
+        f'- Booms: {tapper["current_booms"] - before["current_booms"]:,}'
+        f'### :fast_forward: Skip to ★ {tapper["current"]}')
     await message.reply(tap_message_content)
 
 
@@ -178,7 +180,7 @@ async def leaderboard(message):
     message = await message.reply(leaderboard_message_content)
     for i in range(min(5, len(sorted_tappers))):
         tapper = sorted_tappers[i]
-        leaderboard_message_content += f'{i}. ★ {tapper["highest"]}, {tapper["highest_booms"]} booms - <@{tapper["id"]}>\n'
+        leaderboard_message_content += f'{i}. ★ {tapper["highest"]}, {tapper["highest_booms"]:,} booms - <@{tapper["id"]}>\n'
     await message.edit(content=leaderboard_message_content)
 
 
