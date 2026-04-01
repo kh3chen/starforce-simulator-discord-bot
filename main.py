@@ -1,6 +1,7 @@
 import ast
 import asyncio
 import random
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -152,6 +153,7 @@ async def skip(message, tapper):
             return
 
         await message.reply(f'Tapping until ★ {prestige["highest"]}...')
+        last_message_time = datetime.now().timestamp()
         before = prestige.copy()
         while prestige['current'] < prestige['highest']:
             tapper['taps'] += 1
@@ -168,10 +170,12 @@ async def skip(message, tapper):
                 prestige['current'] = sf_rate['trace']
                 prestige['current_booms'] += 1
 
-            # Send message every 500,000 taps
-            if prestige['taps'] - before['taps'] % 500000 == 0:
+            # Send message every 10 seconds
+            now = datetime.now().timestamp()
+            if now - last_message_time > 10:
                 await message.reply(
-                    f'Still tapping until ★ {prestige["highest"]}... ({prestige["taps"] - before["taps"]:,} taps)')
+                    f'Still tapping until ★ {prestige["highest"]}...')
+                last_message_time = now
 
             # Sleep so this task doesn't block
             await asyncio.sleep(0)
