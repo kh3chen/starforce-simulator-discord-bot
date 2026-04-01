@@ -71,14 +71,15 @@ async def on_message(message: discord.Message):
     if message.channel.id != config.TAP_CHANNEL_ID:
         return
 
-    if 'tap' == message.content.lower():
-        await tap(message)
-    if 'skip22' == message.content.lower():
-        await skip22(message)
-    elif 'stats' == message.content.lower():
-        await stats(message)
-    elif 'leaderboard' == message.content.lower():
-        await leaderboard(message)
+    match message.content.lower().strip():
+        case 'tap':
+            await tap(message)
+        case 'skip':
+            await skip(message)
+        case 'stats':
+            await stats(message)
+        case 'leaderboard':
+            await leaderboard(message)
 
 
 async def tap(message: discord.Message):
@@ -123,23 +124,19 @@ async def tap(message: discord.Message):
     await message.reply(tap_message_content)
 
 
-async def skip22(message):
+async def skip(message):
     if message.author.id not in tappers:
         await message.reply('You have yet to unlock this power.')
         return
 
     tapper = tappers[message.author.id]
-    if tapper['taps'] < 500:
-        await message.reply('You have yet to unlock this power.')
+    if tapper['current'] >= tapper['highest']:
+        await message.reply('You cannot skip beyond what you have yet to achieve. You must tap from here.')
         return
 
-    if tapper['current'] >= 22:
-        await message.reply('You are already at ★ 22! You must tap alone from here.')
-        return
-
-    await message.reply('Tapping until ★ 22...')
+    await message.reply(f'Tapping until ★ {tapper["highest"]}...')
     before = tapper.copy()
-    while tapper['current'] < 22:
+    while tapper['current'] < tapper['highest']:
         tapper['taps'] += 1
         random.seed(message.author.id * (tapper['taps']))
         roll = random.randrange(10000)
