@@ -187,40 +187,42 @@ async def skip(message, tapper):
 
 
 async def prestige(message, tapper):
-    prestige = tapper['prestiges'][-1]
-    if prestige['current'] < 30:
-        await message.reply('Reach ★ 30 to Prestige ⬖.')
-        return
+    async with async_locks[message.author.id]:
+        prestige = tapper['prestiges'][-1]
+        if prestige['current'] < 30:
+            await message.reply('Reach ★ 30 to Prestige ⬖.')
+            return
 
-    tapper['prestiges'].append(
-        {'spent': 0, 'highest': 0, 'highest_booms': 0, 'current': 0, 'current_booms': 0, 'taps': 0})
+        tapper['prestiges'].append(
+            {'spent': 0, 'highest': 0, 'highest_booms': 0, 'current': 0, 'current_booms': 0, 'taps': 0})
 
-    await message.reply(
-        f'You have reached Prestige ⬖ {len(tapper["prestiges"]) - 1:,}! Your stars and booms have been reset.')
+        await message.reply(
+            f'You have reached Prestige ⬖ {len(tapper["prestiges"]) - 1:,}! Your stars and booms have been reset.')
 
 
 async def stats(message, tapper):
-    stats_message_content = f'## {message.author.mention} stats\n'
-    current_prestige = tapper['prestiges'][-1]
-    if len(tapper['prestiges']) > 1:
-        stats_message_content += f'### Current Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n'
-    stats_message_content += (f'- Tapped {current_prestige["taps"]:,} times\n'
-                              f'- Current: ★ {current_prestige["current"]} | {current_prestige["current_booms"]:,} booms\n'
-                              f'- Record: ★ {current_prestige["highest"]} | {current_prestige["highest_booms"]:,} booms\n')
-    if len(tapper['prestiges']) > 1:
-        best_prestige = \
-            sorted(tapper['prestiges'], key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))[
-                0].copy()
+    async with async_locks[message.author.id]:
+        stats_message_content = f'## {message.author.mention} stats\n'
+        current_prestige = tapper['prestiges'][-1]
+        if len(tapper['prestiges']) > 1:
+            stats_message_content += f'### Current Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n'
+        stats_message_content += (f'- Tapped {current_prestige["taps"]:,} times\n'
+                                  f'- Current: ★ {current_prestige["current"]} | {current_prestige["current_booms"]:,} booms\n'
+                                  f'- Record: ★ {current_prestige["highest"]} | {current_prestige["highest_booms"]:,} booms\n')
+        if len(tapper['prestiges']) > 1:
+            best_prestige = \
+                sorted(tapper['prestiges'], key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))[
+                    0].copy()
 
-        stats_message_content += f'### Best Prestige ⬖ {tapper["prestiges"].index(best_prestige):,}\n'
-        stats_message_content += (f'- Tapped {best_prestige["taps"]:,} times\n'
-                                  f'- ★ {best_prestige["highest"]} | {best_prestige["highest_booms"]:,} booms\n')
-        stats_message_content += f'### Full Journey\n'
-        stats_message_content += (f'- Total taps: {tapper["taps"]:,}\n'
-                                  f'- Total booms: {sum(prestige["current_booms"] for prestige in tapper["prestiges"]):,}\n'
-                                  f'- Total mesos: {sum(prestige["spent"] for prestige in tapper["prestiges"]):,}\n')
+            stats_message_content += f'### Best Prestige ⬖ {tapper["prestiges"].index(best_prestige):,}\n'
+            stats_message_content += (f'- Tapped {best_prestige["taps"]:,} times\n'
+                                      f'- ★ {best_prestige["highest"]} | {best_prestige["highest_booms"]:,} booms\n')
+            stats_message_content += f'### Full Journey\n'
+            stats_message_content += (f'- Total taps: {tapper["taps"]:,}\n'
+                                      f'- Total booms: {sum(prestige["current_booms"] for prestige in tapper["prestiges"]):,}\n'
+                                      f'- Total mesos: {sum(prestige["spent"] for prestige in tapper["prestiges"]):,}\n')
 
-    await message.reply(stats_message_content)
+        await message.reply(stats_message_content)
 
 
 async def leaderboard(message):
