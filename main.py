@@ -242,10 +242,10 @@ async def leaderboard(message):
     leaderboard_message_content = f'## Leaderboard\n'
     leaderboard_message_content += f'### Prestige\n'
     sorted_by_prestige_level = sorted([tapper for tapper in tappers.values() if len(tapper['prestiges']) > 1],
-                                      key=lambda tapper: (-len(tapper['prestiges']), tapper['taps']))
+                                      key=lambda tapper: (-len(tapper['prestiges']), -tapper['prestiges'][-1]['highest'], tapper['taps']))
     for i in range(min(10, len(sorted_by_prestige_level))):
         tapper = sorted_by_prestige_level[i]
-        leaderboard_message_content += f'{i}. Prestige ⬖ {len(tapper["prestiges"]) - 1:,} | {tapper["taps"]:,} - <@{tapper["id"]}>\n'
+        leaderboard_message_content += f'{i}. Prestige ⬖ {len(tapper["prestiges"]) - 1:,} | ★ {tapper["prestiges"][-1]["highest"]} - <@{tapper["id"]}>\n'
 
     leaderboard_message_content += f'### Star Force\n'
     best_prestige_of_tappers = []
@@ -257,8 +257,8 @@ async def leaderboard(message):
     sorted_best_prestige_of_tappers = sorted(best_prestige_of_tappers,
                                              key=lambda prestige: (-prestige['highest'], prestige['highest_booms']))
     for i in range(min(10, len(sorted_best_prestige_of_tappers))):
-        tapper = sorted_best_prestige_of_tappers[i]
-        leaderboard_message_content += f'{i}. ★ {tapper["highest"]} | {tapper["highest_booms"]:,} booms - <@{tapper["id"]}>\n'
+        prestige = sorted_best_prestige_of_tappers[i]
+        leaderboard_message_content += f'{i}. ★ {prestige["highest"]} | {prestige["highest_booms"]:,} booms - <@{prestige["id"]}>\n'
 
     message = await message.reply('## Leaderboard')
     await message.edit(content=leaderboard_message_content)
