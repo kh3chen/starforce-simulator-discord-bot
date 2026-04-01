@@ -213,8 +213,8 @@ async def stats(message):
                                   f'- ★ {best_prestige["highest"]} | {best_prestige["highest_booms"]:,} booms\n')
         stats_message_content += f'### Full Journey\n'
         stats_message_content += (f'- Total taps: {tapper["taps"]:,}\n'
-                                  f'- Total booms: {sum(prestige["current_booms"] for prestige in tapper["prestiges"]):,}'
-                                  f'- Total mesos: {sum(prestige["spent"] for prestige in tapper["prestiges"]):,}')
+                                  f'- Total booms: {sum(prestige["current_booms"] for prestige in tapper["prestiges"]):,}\n'
+                                  f'- Total mesos: {sum(prestige["spent"] for prestige in tapper["prestiges"]):,}\n')
 
     await message.reply(stats_message_content)
 
