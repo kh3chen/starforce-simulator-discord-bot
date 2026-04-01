@@ -52,9 +52,11 @@ starforce_simulator = StarforceSimulator(command_prefix='#', intents=starforce_s
 try:
     with open("tappers.txt") as f:
         tappers = ast.literal_eval(f.read())
+        for tapper in tappers.values():
+            if 'prestige' not in tapper:
+                tapper['prestige'] = 0
 except (ValueError, FileNotFoundError, SyntaxError):
     tappers = {}
-print(tappers)
 
 
 @starforce_simulator.event
@@ -75,6 +77,8 @@ async def on_message(message: discord.Message):
         await tap(message)
     if 'skip' == message.content.lower().strip():
         await skip(message)
+    if 'prestige' == message.content.lower().strip():
+        await prestige(message)
     if 'stats' == message.content.lower().strip():
         await stats(message)
     if 'leaderboard' == message.content.lower().strip():
@@ -84,12 +88,11 @@ async def on_message(message: discord.Message):
 async def tap(message: discord.Message):
     if message.author.id not in tappers:
         tappers[message.author.id] = {'id': message.author.id, 'taps': 0, 'spent': 0, 'highest': 0, 'highest_booms': 0,
-                                      'current': 0,
-                                      'current_booms': 0}
+                                      'current': 0, 'current_booms': 0, 'past_booms': 0, 'prestige': 0}
     tapper = tappers[message.author.id]
 
     if tapper['current'] == 30:
-        await message.reply('You already hit ★ 30!')
+        await message.reply('You already hit ★ 30! Perhaps prestige?')
         return
 
     tapper['taps'] += 1
@@ -107,6 +110,8 @@ async def tap(message: discord.Message):
         tapper['current'] += 1
         if tapper['current'] > tapper['highest']:
             tapper['highest'] = tapper['current']
+            tapper['highest_booms'] = tapper['current_booms']
+        elif tapper['current'] == tapper['highest'] and tapper['current_booms'] < tapper['highest_booms']:
             tapper['highest_booms'] = tapper['current_booms']
         tap_message_content += f'### :star: Success - ★ {tapper["current"]}'
     elif roll >= sf_rate['failure']:
@@ -129,6 +134,11 @@ async def skip(message):
         return
 
     tapper = tappers[message.author.id]
+
+    if tapper['current'] == 30:
+        await message.reply('You already hit ★ 30! Perhaps prestige?')
+        return
+
     if tapper['current'] >= tapper['highest']:
         await message.reply('You cannot skip beyond what you have yet to achieve. You must tap from here.')
         return
@@ -143,9 +153,6 @@ async def skip(message):
         tapper['spent'] += sf_rate['cost']
         if roll >= sf_rate['success']:
             tapper['current'] += 1
-            if tapper['current'] > tapper['highest']:
-                tapper['highest'] = tapper['current']
-                tapper['highest_booms'] = tapper['current_booms']
         elif roll >= sf_rate['failure']:
             pass
         else:
@@ -160,27 +167,47 @@ async def skip(message):
     await message.reply(tap_message_content)
 
 
+async def prestige(message):
+    if message.author.id not in tappers:
+        await message.reply('Reach ★ 30 to prestige.')
+        return
+
+    if tapper['current'] < 30:
+        await message.reply('Reach ★ 30 to prestige.')
+        return
+
+    tapper['prestige'] += 1
+    tapper['current'] = 0
+    tapper['past_booms'] += tapper['current_booms']
+    tapper['current_booms'] = 0
+
+    await message.reply(f'You have reached Prestige {tapper["prestige"]}! Your stars and booms have been reset.')
+
+
 async def stats(message):
     if message.author.id not in tappers:
         await message.reply('No stats yet, start tapping!')
     tapper = tappers[message.author.id]
 
     stats_message_content = (f'### {message.author.mention}\'s stats\n'
-                             f'- tapped {tapper["taps"]:,} times\n'
+                             f'- Tapped {tapper["taps"]:,} times\n'
                              f'- {tapper["spent"]:,} mesos spent\n'
-                             f'- currently at ★ {tapper["current"]}, {tapper["current_booms"]:,} booms\n'
-                             f'- record is ★ {tapper["highest"]}, {tapper["highest_booms"]:,} booms\n')
+                             f'- Current: ★ {tapper["current"]} | {tapper["current_booms"]:,} booms\n'
+                             f'- Record: ★ {tapper["highest"]} | {tapper["highest_booms"]:,} booms\n')
+    if tapper['prestige'] > 0:
+        stats_message_content += (f'- Prestige {tapper["prestige"]:,}\n'
+                                  f'- {tapper["current_booms"] + tapper["past_booms"]:,} total booms\n')
     await message.reply(stats_message_content)
 
 
 async def leaderboard(message):
     sorted_tappers = sorted(tappers.values(),
-                            key=lambda tapper: (-tapper['highest'], tapper['highest_booms'], tapper['spent']))
+                            key=lambda tapper: (-tapper['highest'], tapper['highest_booms']))
     leaderboard_message_content = f'### Leaderboard\n'
     message = await message.reply(leaderboard_message_content)
     for i in range(min(5, len(sorted_tappers))):
         tapper = sorted_tappers[i]
-        leaderboard_message_content += f'{i}. ★ {tapper["highest"]}, {tapper["highest_booms"]:,} booms - <@{tapper["id"]}>\n'
+        leaderboard_message_content += f'{i}. ★ {tapper["highest"]} | {tapper["highest_booms"]:,} booms - <@{tapper["id"]}>\n'
     await message.edit(content=leaderboard_message_content)
 
 
