@@ -86,8 +86,8 @@ async def on_message(message: discord.Message):
 async def tap(message: discord.Message):
     if message.author.id not in tappers:
         tappers[message.author.id] = {'id': message.author.id, 'taps': 0,
-                                      'prestige': [{'spent': 0, 'highest': 0, 'highest_booms': 0,
-                                                    'current': 0, 'current_booms': 0, 'taps': 0}]}
+                                      'prestiges': [{'spent': 0, 'highest': 0, 'highest_booms': 0,
+                                                     'current': 0, 'current_booms': 0, 'taps': 0}]}
     tapper = tappers[message.author.id]
     prestige = tapper['prestiges'][-1]
 
