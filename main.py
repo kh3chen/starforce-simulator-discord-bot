@@ -55,6 +55,8 @@ try:
         for t in tappers.values():
             if 'prestige' not in t:
                 t['prestige'] = 0
+            if 'past_booms' not in t:
+                t['past_booms'] = 0
 except (ValueError, FileNotFoundError, SyntaxError):
     tappers = {}
 
