@@ -54,7 +54,7 @@ try:
         tappers = ast.literal_eval(f.read())
         for t in tappers.values():
             if t['prestige'] > 0:
-                t['prestige'] = [t]
+                t['prestige'] = [].append(t)
             else:
                 t['prestige'] = []
 except (ValueError, FileNotFoundError, SyntaxError):
@@ -62,6 +62,7 @@ except (ValueError, FileNotFoundError, SyntaxError):
 
 with open("tappers_new.txt", "w") as f:
     f.write(tappers.__str__())
+
 
 @starforce_simulator.event
 async def on_ready():
