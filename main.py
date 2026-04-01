@@ -105,7 +105,7 @@ async def tap(message: discord.Message):
                            f'- Cost: {sf_rate["cost"]:,} mesos\n'
                            f'- Success: {sf_rate["success"]:,} or higher ({sf_rate["p_success"]})\n')
     if len(tapper['prestiges']) > 1:
-        tap_message_content = f'### Prestige {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
+        tap_message_content = f'### Prestige ⬖ {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
     if sf_rate['failure'] > 0:
         tap_message_content += f'- Destruction: {sf_rate["failure"] - 1:,} or lower ({sf_rate["p_trace"]})\n'
     tap_message_content += f'Your roll [0-9,999]: {roll:,}\n'
