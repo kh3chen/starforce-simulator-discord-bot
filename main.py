@@ -71,11 +71,13 @@ async def on_message(message: discord.Message):
     if message.channel.id != config.TAP_CHANNEL_ID:
         return
 
-    if 'tap' == message.content:
+    if 'tap' == message.content.lower():
         await tap(message)
-    elif 'stats' == message.content:
+    if 'skip22' == message.content.lower():
+        await skip22(message)
+    elif 'stats' == message.content.lower():
         await stats(message)
-    elif 'leaderboard' == message.content:
+    elif 'leaderboard' == message.content.lower():
         await leaderboard(message)
 
 
@@ -118,6 +120,45 @@ async def tap(message: discord.Message):
     with open("tappers.txt", "w") as f:
         f.write(tappers.__str__())
 
+    await message.reply(tap_message_content)
+
+
+async def skip22(message):
+    if message.author.id not in tappers:
+        await message.reply('You have yet to unlock this power.')
+        return
+
+    tapper = tappers[message.author.id]
+    if tapper['taps'] < 1000:
+        await message.reply('You have yet to unlock this power.')
+        return
+
+    if tapper['current'] >= 22:
+        await message.reply('You are already at ★ 22! You must tap alone from here.')
+        return
+
+    await message.reply('Tapping until ★ 22...')
+    before = tapper.copy()
+    while tapper['current'] < 22:
+        tapper['taps'] += 1
+        random.seed(message.author.id * (tapper['taps']))
+        roll = random.randrange(10000)
+        sf_rate = sf_rates[tapper['current']]
+        tapper['spent'] += sf_rate['cost']
+        if roll >= sf_rate['success']:
+            tapper['current'] += 1
+            if tapper['current'] > tapper['highest']:
+                tapper['highest'] = tapper['current']
+                tapper['highest_booms'] = tapper['current_booms']
+        elif roll >= sf_rate['failure']:
+            pass
+        else:
+            tapper['current'] = sf_rate['trace']
+            tapper['current_booms'] += 1
+
+    tap_message_content = (f'### Taps #{before["taps"] + 1}-{tapper["taps"]} - ★ {tapper["current"]}\n'
+                           f'- Cost: {tapper["spent"] - before["spent"]:,} mesos\n'
+                           f'- Booms: {tapper["current_booms"] - before["current_booms"]}')
     await message.reply(tap_message_content)
 
 
