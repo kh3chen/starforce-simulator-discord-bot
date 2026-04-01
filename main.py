@@ -105,7 +105,7 @@ async def tap(message: discord.Message):
                            f'- Cost: {sf_rate["cost"]:,} mesos\n'
                            f'- Success: {sf_rate["success"]:,} or higher ({sf_rate["p_success"]})\n')
     if len(tapper['prestiges']) > 1:
-        tap_message_content = f'### Prestige {len(tapper["prestiges"] - 1):,}\n' + tap_message_content
+        tap_message_content = f'### Prestige {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
     if sf_rate['failure'] > 0:
         tap_message_content += f'- Destruction: {sf_rate["failure"] - 1:,} or lower ({sf_rate["p_trace"]})\n'
     tap_message_content += f'Your roll [0-9,999]: {roll:,}\n'
@@ -152,7 +152,7 @@ async def skip(message):
     while prestige['current'] < prestige['highest']:
         tapper['taps'] += 1
         prestige['taps'] += 1
-        random.seed(message.author.id * (prestige['taps']))
+        random.seed(message.author.id * (tapper['taps']))
         roll = random.randrange(10000)
         sf_rate = sf_rates[prestige['current']]
         prestige['spent'] += sf_rate['cost']
@@ -170,7 +170,7 @@ async def skip(message):
         f'- Booms: {prestige["current_booms"] - before["current_booms"]:,}\n'
         f'### :fast_forward: Skip to ★ {prestige["current"]}')
     if len(tapper['prestiges']) > 1:
-        tap_message_content = f'### Prestige {len(tapper["prestiges"] - 1):,}\n' + tap_message_content
+        tap_message_content = f'### Prestige {len(tapper["prestiges"]) - 1:,}\n' + tap_message_content
     await message.reply(tap_message_content)
 
 
@@ -188,7 +188,8 @@ async def prestige(message):
     tapper['prestiges'].append(
         {'spent': 0, 'highest': 0, 'highest_booms': 0, 'current': 0, 'current_booms': 0, 'taps': 0})
 
-    await message.reply(f'You have reached Prestige {len(tapper["prestiges"])}! Your stars and booms have been reset.')
+    await message.reply(
+        f'You have reached Prestige {len(tapper["prestiges"]) - 1:,}! Your stars and booms have been reset.')
 
 
 async def stats(message):
